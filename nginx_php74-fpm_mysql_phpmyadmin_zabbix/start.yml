@@ -1,0 +1,15 @@
+---
+
+- name: Install MySQL, Nginx
+  hosts: 127.0.0.1
+  #remote_user: root
+  #remote_user: apostol
+  become: yes
+  become_method: sudo
+
+  roles:
+    - mysql
+    - nginx
+    - php-fpm
+    #- zabbix
+    - phpmyadmin

@@ -1,0 +1,81 @@
+---
+- name: Make dir for fcgi-cache
+  file:
+    path={{ fcgi_cache }}
+    state=directory
+    owner={{ www_user }}
+    group={{ www_group }}   
+
+- name: Install php-fpm and deps
+  apt:
+    name=php{{7.4}}
+    state=latest
+  with_items:
+    - php{{7.4}}-curl
+    - php{{7.4}}-fpm
+    - php{{7.4}}-intl
+    - php{{7.4}}-mysql
+    - php{{7.4}}-xml
+    - php{{7.4}}-mbstring
+    - php{{7.4}}-bcmath
+    - php{{7.4}}-bz2
+    - php{{7.4}}-cli
+    - php{{7.4}}-common
+    - php{{7.4}}-gd
+    - php{{7.4}}-mcrypt
+    - php{{7.4}}-imap
+    - php{{7.4}}-intl
+    - php{{7.4}}-json
+    - php{{7.4}}-opcache
+    - php{{7.4}}-pgsql
+    - php{{7.4}}-readline
+    - php{{7.4}}-sqlite3
+    - php{{7.4}}-tidy
+    - php{{7.4}}-zip
+    ###
+    - php-amqp
+    - php-apcu
+    - php-geoip
+    - php-imagick
+    - php-memcache
+    - php-mongodb
+    - php-oauth
+    - php-smbclient
+    - php-solr
+    - php-ssh2
+    - php-uploadprogress
+    - php-uuid
+    - php-yaml
+    - php-xdebug
+
+- name: Creates directory
+  file:
+    path: /etc/php/7.4/fpm/pool.d
+    state: directory
+    recurse: yes
+
+
+- name: Presence of /etc/php/7.4/fpm/pool.d/www.conf
+  stat: path=/etc/php/7.4/fpm/pool.d/www.conf
+  register: www_conf_stat
+
+- name: BackUP /etc/php/7.4/fpm/pool.d/www.conf
+  command: mv /etc/php/7.4/fpm/pool.d/www.conf /etc/php/7.4/fpm/pool.d/www.conf_old_{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}
+  when: www_conf_stat.stat.exists
+
+- name: Copy config to /etc/php/7.4/fpm/pool.d/www.conf
+  template:
+    src=www.conf.j2
+    dest=/etc/php/7.4/fpm/pool.d/www.conf
+  notify: restart php7.4-fpm
+
+- name: Copy test.php
+  copy:
+    src=test.php
+    dest={{ www_dir }}/{{ site_dir }}/test.php
+
+- name: Restart the Nginx service
+  action:
+    systemd name=nginx
+    state=restarted enabled=true
+
